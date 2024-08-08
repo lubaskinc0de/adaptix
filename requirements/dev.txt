@@ -69,7 +69,7 @@ docutils==0.20.1
     #   sphinx-paramlinks
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
-filelock==3.13.4
+filelock==3.15.4
     # via
     #   tox
     #   virtualenv
@@ -140,7 +140,7 @@ numpy==1.26.4
     # via
     #   contourpy
     #   matplotlib
-packaging==24.0
+packaging==24.1
     # via
     #   build
     #   marshmallow
@@ -158,7 +158,7 @@ pillow==10.3.0
     # via matplotlib
 pip-tools==7.4.1
     # via -r requirements/raw/dev.txt
-platformdirs==4.2.0
+platformdirs==4.2.2
     # via
     #   tox
     #   virtualenv
@@ -194,7 +194,7 @@ pyparsing==3.1.2
     # via matplotlib
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
-pyproject-api==1.6.1
+pyproject-api==1.7.1
     # via tox
 pyproject-hooks==1.0.0
     # via
@@ -278,7 +278,7 @@ toml==0.10.2
     # via vulture
 towncrier==23.11.0
     # via -r requirements/raw/dev.txt
-tox==4.14.2
+tox-uv==1.11.1
     # via -r requirements/raw/runner.txt
 typing-extensions==4.11.0
     # via
@@ -289,7 +289,7 @@ typing-extensions==4.11.0
     #   sqlalchemy
 urllib3==2.2.1
     # via requests
-virtualenv==20.25.3
+virtualenv==20.26.3
     # via
     #   pre-commit
     #   tox

@@ -24,9 +24,9 @@ phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
 pluggy==1.5.0
     # via pytest
-pydantic==2.0
+pydantic==2.1.0
     # via -r requirements/raw/test_extra_old.txt
-pydantic-core==2.0.1
+pydantic-core==2.4.0
     # via pydantic
 pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
