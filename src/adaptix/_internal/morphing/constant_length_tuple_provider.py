@@ -8,9 +8,8 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_UNPACK
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.located_request import for_predicate
 from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import DebugTrailRequest, StrictCoercionRequest, get_type_from_request, try_normalize_type
 from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import (
     AggregateLoadError,
@@ -21,15 +20,16 @@ from .load_error import (
     TypeLoadError,
 )
 from .provider_template import DumperProvider, LoaderProvider
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .utils import try_normalize_type
 
 CollectionsMapping = collections.abc.Mapping
 
 
 @for_predicate(Tuple)
 class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(get_type_from_request(request))
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        norm = try_normalize_type(request.last_loc.type)
         if len(norm.args) > 1 and norm.args[1] == Ellipsis:
             raise CannotProvide
         if HAS_UNPACK and any(arg.origin == typing.Unpack for arg in norm.args if arg != Ellipsis):
@@ -41,14 +41,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
         loaders = mediator.mandatory_provide_by_iterable(
             [
-                LoaderRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
-                    ),
-                )
+                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
                 for i, tp in enumerate(norm.args)
             ],
             lambda: "Cannot create loader for tuple. Loaders for some elements cannot be created",
@@ -214,8 +207,8 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
         return dt_disable_sc_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        norm = try_normalize_type(get_type_from_request(request))
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        norm = try_normalize_type(request.last_loc.type)
         if len(norm.args) > 1 and norm.args[1] == Ellipsis:
             raise CannotProvide
         if HAS_UNPACK and any(arg.origin == typing.Unpack for arg in norm.args if arg != Ellipsis):
@@ -226,14 +219,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             )
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
-                    ),
-                )
+                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
                 for i, tp in enumerate(norm.args)
             ],
             lambda: "Cannot create dumper for tuple. Dumpers for some elements cannot be created",

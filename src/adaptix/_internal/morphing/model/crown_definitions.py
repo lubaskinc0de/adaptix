@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Uni
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
-from ...provider.request_cls import LocatedRequest
+from ...provider.located_request import LocatedRequest
 from ...utils import SingletonMeta
 
 T = TypeVar("T")
@@ -32,7 +32,7 @@ class ExtraCollect(metaclass=SingletonMeta):
 # as well as the policy of extra data processing.
 # This structure is named in honor of the crown of the tree.
 #
-# NoneCrown-s represent element that do not map to any field
+# NoneCrown-s represents an element that does not map to any field
 
 
 @dataclass

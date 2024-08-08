@@ -6,26 +6,23 @@ from typing import Callable, Iterable, Mapping
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
-from ..morphing.provider_template import DumperProvider, LoaderProvider
+from ..morphing.provider_template import MorphingProvider
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    LocatedRequest,
-    StrictCoercionRequest,
-    get_type_from_request,
-    try_normalize_type,
-)
 from ..struct_trail import append_trail, render_trail_as_note
+from .json_schema.definitions import JSONSchema
+from .json_schema.request_cls import JSONSchemaRequest
+from .json_schema.schema_model import JSONSchemaType
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .utils import try_normalize_type
 
 CollectionsMapping = collections.abc.Mapping
 
 
 @for_predicate(Iterable)
-class IterableProvider(LoaderProvider, DumperProvider):
+class IterableProvider(MorphingProvider):
     ABC_TO_IMPL = {
         collections.abc.Iterable: tuple,
         collections.abc.Reversible: tuple,
@@ -51,7 +48,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         raise CannotProvide
 
     def _fetch_norm_and_arg(self, request: LocatedRequest):
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
 
         if len(norm.args) != 1 and not (norm.origin == tuple and norm.args[-1] == Ellipsis):
             raise CannotProvide
@@ -66,19 +63,12 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return norm, arg
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
         arg_loader = mediator.mandatory_provide(
-            LoaderRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=arg,
-                        generic_pos=0,
-                    ),
-                ),
-            ),
+            request.append_loc(GenericParamLoc(type=arg, generic_pos=0)),
             lambda x: "Cannot create loader for iterable. Loader for element cannot be created",
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
@@ -207,19 +197,12 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return iter_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
         arg_dumper = mediator.mandatory_provide(
-            DumperRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=arg,
-                        generic_pos=0,
-                    ),
-                ),
-            ),
+            request.append_loc(GenericParamLoc(type=arg, generic_pos=0)),
             lambda x: "Cannot create dumper for iterable. Dumper for element cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
@@ -286,3 +269,18 @@ class IterableProvider(LoaderProvider, DumperProvider):
             return iter_factory(map(arg_dumper, data))
 
         return iter_dumper
+
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
+        norm, arg = self._fetch_norm_and_arg(request)
+        item_schema = mediator.mandatory_provide(
+            request.append_loc(
+                GenericParamLoc(
+                    type=arg,
+                    generic_pos=0,
+                ),
+            ),
+            lambda x: "Cannot create JSONSchema for iterable. JSONSchema for element cannot be created",
+        )
+        if norm.origin == set:
+            return JSONSchema(type=JSONSchemaType.ARRAY, items=item_schema, unique_items=True)
+        return JSONSchema(type=JSONSchemaType.ARRAY, items=item_schema)

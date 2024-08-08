@@ -1,7 +1,5 @@
 from abc import ABC
 from datetime import date, datetime, time
-from decimal import Decimal
-from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
@@ -11,21 +9,21 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
-from ...provider.loc_stack_filtering import P
-from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocStack, StrictCoercionRequest, TypeHintLoc
+from ...provider.loc_stack_filtering import LocStack, P
+from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
+from ...provider.value_provider import ValueProvider
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
 from ..concrete_provider import (
-    BOOL_LOADER_PROVIDER,
-    COMPLEX_LOADER_PROVIDER,
-    DECIMAL_LOADER_PROVIDER,
-    FLOAT_LOADER_PROVIDER,
-    FRACTION_LOADER_PROVIDER,
-    INT_LOADER_PROVIDER,
-    STR_LOADER_PROVIDER,
+    BOOL_PROVIDER,
+    COMPLEX_PROVIDER,
+    DECIMAL_PROVIDER,
+    FLOAT_PROVIDER,
+    FRACTION_PROVIDER,
+    INT_PROVIDER,
+    STR_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
     BytesIOBase64Provider,
@@ -55,7 +53,7 @@ from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSie
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
-from ..request_cls import DumperRequest, LoaderRequest
+from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
 
 
@@ -78,26 +76,13 @@ class FilledRetort(OperatingRetort, ABC):
         flag_by_exact_value(),
         enum_by_exact_value(),  # it has higher priority than scalar types for Enum with mixins
 
-        INT_LOADER_PROVIDER,
-        as_is_dumper(int),
-
-        FLOAT_LOADER_PROVIDER,
-        as_is_dumper(float),
-
-        STR_LOADER_PROVIDER,
-        as_is_dumper(str),
-
-        BOOL_LOADER_PROVIDER,
-        as_is_dumper(bool),
-
-        DECIMAL_LOADER_PROVIDER,
-        dumper(Decimal, Decimal.__str__),
-
-        FRACTION_LOADER_PROVIDER,
-        dumper(Fraction, Fraction.__str__),
-
-        COMPLEX_LOADER_PROVIDER,
-        dumper(complex, complex.__str__),
+        INT_PROVIDER,
+        FLOAT_PROVIDER,
+        STR_PROVIDER,
+        BOOL_PROVIDER,
+        DECIMAL_PROVIDER,
+        FRACTION_PROVIDER,
+        COMPLEX_PROVIDER,
 
         BytesBase64Provider(),
         BytesIOBase64Provider(),
@@ -215,13 +200,13 @@ class AdornedRetort(OperatingRetort):
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
-            clone._inc_instance_recipe = (
-                tuple(recipe) + clone._inc_instance_recipe
+            clone._instance_recipe = (
+                tuple(recipe) + clone._instance_recipe
             )
 
         return clone
 
-    def _get_config_recipe(self) -> VarTuple[Provider]:
+    def _get_recipe_tail(self) -> VarTuple[Provider]:
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
             ValueProvider(DebugTrailRequest, self._debug_trail),
