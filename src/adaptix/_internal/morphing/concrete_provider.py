@@ -63,7 +63,6 @@ class IsoFormatProvider(MorphingProvider):
         return JSONSchema(type=JSONSchemaType.STRING, format=self._CLS_TO_JSON_FORMAT[self._cls])
 
 
-@for_predicate(datetime)
 class DatetimeFormatProvider(MorphingProvider):
     def __init__(self, fmt: str):
         self._fmt = fmt
@@ -102,7 +101,6 @@ class DatetimeFormatProvider(MorphingProvider):
         return JSONSchema(type=JSONSchemaType.STRING)
 
 
-@for_predicate(datetime)
 class DatetimeTimestampProvider(MorphingProvider):
     def __init__(self, tz: Optional[timezone]):
         self._tz = tz
@@ -140,7 +138,6 @@ class DatetimeTimestampProvider(MorphingProvider):
         return JSONSchema(type=JSONSchemaType.NUMBER)
 
 
-@for_predicate(date)
 class DateTimestampProvider(MorphingProvider):
     def _is_pydatetime(self) -> bool:
         try:

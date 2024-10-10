@@ -10,13 +10,8 @@ from typing import Union
 import pytest
 from tests_helpers import cond_list, raises_exc
 
-from adaptix import Retort
+from adaptix import Retort, date_by_timestamp, datetime_by_format, datetime_by_timestamp
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
-from adaptix._internal.morphing.concrete_provider import (
-    DatetimeFormatProvider,
-    DateTimestampProvider,
-    DatetimeTimestampProvider,
-)
 from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
 INVALID_INPUT_ISO_FORMAT = (
@@ -75,7 +70,7 @@ def test_invalid_input_datetime_format(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            DatetimeFormatProvider("%Y-%m-%d"),
+            datetime_by_format(fmt="%Y-%m-%d"),
         ],
     )
 
@@ -90,8 +85,8 @@ def test_invalid_input_datetime_format(
 @pytest.mark.parametrize(
     ["tp", "loader"],
     [
-        (datetime, DatetimeTimestampProvider(tz=timezone.utc)),
-        (date, DateTimestampProvider()),
+        (datetime, datetime_by_timestamp(tz=timezone.utc)),
+        (date, date_by_timestamp()),
     ],
 )
 @pytest.mark.parametrize(
@@ -189,7 +184,7 @@ def test_datetime_format_provider(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            DatetimeFormatProvider("%Y-%m-%d"),
+            datetime_by_format(fmt="%Y-%m-%d"),
         ],
     )
 
@@ -217,7 +212,7 @@ def test_datetime_timestamp_provider(strict_coercion, debug_trail, tz: timezone)
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            DatetimeTimestampProvider(tz=tz),
+            datetime_by_timestamp(tz=tz),
         ],
     )
 
@@ -249,7 +244,7 @@ def test_date_timestamp_provider(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            DateTimestampProvider(),
+            date_by_timestamp(),
         ],
     )
 
